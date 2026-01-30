@@ -68,8 +68,7 @@ Add the following to your `openclaw.json` under `skills.entries.polyclaw.env`:
   "env": {
     "CHAINSTACK_NODE": "https://polygon-mainnet.core.chainstack.com/YOUR_KEY",
     "POLYCLAW_PRIVATE_KEY": "0x...",
-    "OPENROUTER_API_KEY": "sk-or-v1-...",
-    "HTTPS_PROXY": "http://user:pass@proxy:port"
+    "OPENROUTER_API_KEY": "sk-or-v1-..."
   }
 }
 ```
@@ -180,7 +179,7 @@ Sells your tokens on the CLOB order book at current market price.
 | `CHAINSTACK_NODE` | Yes (trading) | Polygon RPC URL |
 | `OPENROUTER_API_KEY` | Yes (hedge) | OpenRouter API key for LLM |
 | `POLYCLAW_PRIVATE_KEY` | Yes (trading) | EVM private key (hex) |
-| `HTTPS_PROXY` | Recommended | Rotating residential proxy for CLOB API |
+| `HTTPS_PROXY` | No | Only needed if CLOB orders fail (see [troubleshooting](#clob-order-failed--ip-blocked-by-cloudflare)) |
 | `CLOB_MAX_RETRIES` | No | Max retries for CLOB orders (default: 5) |
 
 ## Directory structure

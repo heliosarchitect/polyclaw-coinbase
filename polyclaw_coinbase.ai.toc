@@ -1,0 +1,35 @@
+# polyclaw_coinbase.ai.toc — polyclaw-coinbase
+
+## What This Is
+TODO: one-paragraph project purpose.
+
+## Quick Start
+TODO: quickstart steps.
+
+## Directory Layout
+```
+├── src/              # [Core source code]
+├── tests/            # [Test suite]
+├── docs/             # [Documentation]
+├── config/           # [Configuration files]
+├── scripts/          # [Build/deploy/utility scripts]
+└── [other dirs]      # [Purpose]
+```
+
+## Entry Points
+- **Main**: `README.md` — [what it does]
+- **CLI**: `[command]` — [what it does]
+- **Tests**: `[test command]` — [how to run]
+
+## Key Concepts
+- **[Concept 1]**: [One-line explanation]
+- **[Concept 2]**: [One-line explanation]
+
+## Dependencies
+- **Runtime**: [key dependencies]
+- **Dev**: [test/build dependencies]
+
+## Status
+- **Version**: [version]
+- **Tests**: [pass count] passing
+- **CI**: [CI status]

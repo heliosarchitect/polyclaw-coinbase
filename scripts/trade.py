@@ -26,6 +26,13 @@ from lib.gamma_client import GammaClient, Market
 from lib.clob_client import ClobClientWrapper
 from lib.contracts import CONTRACTS, CTF_ABI, POLYGON_CHAIN_ID
 from lib.position_storage import PositionStorage, PositionEntry
+from lib.safety import (
+    TradeAuditLogger,
+    load_safety_config,
+    PreTradeRequest,
+    run_pretrade_checks,
+    to_payload,
+)
 
 
 @dataclass
@@ -51,6 +58,8 @@ class TradeExecutor:
     def __init__(self, wallet: WalletManager):
         self.wallet = wallet
         self._gamma = GammaClient()
+        self._audit = TradeAuditLogger()
+        self._safety = load_safety_config()
 
     def _get_web3(self) -> Web3:
         """Get Web3 instance."""
@@ -181,10 +190,48 @@ class TradeExecutor:
         print(f"Buying: {position} @ {wanted_price:.2f}")
         print(f"Will sell: {'NO' if position == 'YES' else 'YES'} @ ~{unwanted_price:.2f}")
 
+        pretrade = PreTradeRequest(
+            market_id=market_id,
+            position=position,
+            amount_usd=amount,
+            usdc_balance=balances.usdc_e,
+            approvals_ok=self.wallet.check_approvals(),
+            market_active=market.active,
+            market_closed=market.closed,
+            market_resolved=market.resolved,
+            market_liquidity=market.liquidity,
+            wanted_price=wanted_price,
+            unwanted_price=unwanted_price,
+        )
+        pretrade_result = run_pretrade_checks(pretrade, self._safety)
+        self._audit.log(
+            "trade.intent",
+            {
+                "market_question": market.question,
+                "skip_clob_sell": skip_clob_sell,
+                "pretrade": to_payload(pretrade),
+                "pretrade_result": to_payload(pretrade_result),
+            },
+        )
+        if not pretrade_result.ok:
+            reason = "; ".join(pretrade_result.reasons)
+            self._audit.log("trade.blocked", {"market_id": market_id, "reason": reason})
+            return TradeResult(
+                success=False,
+                market_id=market_id,
+                position=position,
+                amount=amount,
+                split_tx=None,
+                clob_order_id=None,
+                clob_filled=False,
+                error=f"Pre-trade checks failed: {reason}",
+            )
+
         # Execute split
         try:
             split_tx = self._split_position(market.condition_id, amount)
         except Exception as e:
+            self._audit.log("trade.split_failed", {"market_id": market_id, "error": str(e)})
             return TradeResult(
                 success=False,
                 market_id=market_id,
@@ -223,7 +270,7 @@ class TradeExecutor:
                 clob_error = str(e)
                 print(f"CLOB error: {clob_error}")
 
-        return TradeResult(
+        result = TradeResult(
             success=True,  # Split succeeded
             market_id=market_id,
             position=position,
@@ -236,6 +283,8 @@ class TradeExecutor:
             wanted_token_id=wanted_token,
             entry_price=wanted_price,
         )
+        self._audit.log("trade.reconcile", to_payload(result))
+        return result
 
 
 async def cmd_buy(args):
